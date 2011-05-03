@@ -11,6 +11,7 @@ Requirements
 * Python 2.6+
 * Django 1.2+
 
+
 Example Usage
 ====================
 
@@ -24,13 +25,21 @@ A basic example looks like::
     class FooAPI(JSONRPCService):
         @jrpc('get_sum(foo=<num>, bar=<num>?) -> <num>')  # bar arg is optional
         def get_sum(self, foo, bar=2):
+            """
+            No frills, just return the sum.
+            """
             return foo + bar
 
         def private_foo(self):
+            """
+            You can bring your own frends to class, no problem.
+            """
             return u'Hello, World'
+
 
     # urls.py
     # =======
+    from django.conf import settings
     from django.views.decorators.csrf import csrf_exempt
     from foo_app.api import FooAPI
 
@@ -41,10 +50,17 @@ A basic example looks like::
         url(r'^foo.json$', csrf_exempt(foo_api), name='foo_api'),
     )
 
+
+    # Example POST to /foo_app/foo.json
+    REQ -> {"jsonrpc": "2.0", "method": "add_ints", "params": {"foo": 3}, "id": 1}
+    RES <- {"jsonrpc": "2.0", "result": 5, "id": 1}
+
+
 That's it. You don't need to do anything special, define a queryset method,
 register anything, etc. Just write normal methods.
 
 More docs coming soon...
+
 
 Features
 =============
