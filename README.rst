@@ -22,8 +22,8 @@ A basic example looks like::
 
 
     class FooAPI(JSONRPCService):
-        @jrpc('get_sum(foo=<num>, bar=<num>?) -> <num>')
-        def get_sum(self, foo, bar):
+        @jrpc('get_sum(foo=<num>, bar=<num>?) -> <num>')  # bar arg is optional
+        def get_sum(self, foo, bar=2):
             return foo + bar
 
         def private_foo(self):
