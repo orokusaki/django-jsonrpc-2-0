@@ -52,7 +52,7 @@ A basic example looks like::
 
 
     # Example POST to /foo_app/foo.json
-    REQ -> {"jsonrpc": "2.0", "method": "add_ints", "params": {"foo": 3}, "id": 1}
+    REQ -> {"jsonrpc": "2.0", "method": "get_sum", "params": {"foo": 3}, "id": 1}
     RES <- {"jsonrpc": "2.0", "result": 5, "id": 1}
 
 
