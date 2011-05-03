@@ -60,19 +60,17 @@ from encoders import JSONRPCEncoder
 
 
 class JSONRPCServiceMeta(type):
-    """The purpose of this metaclass is to allow sub-classes to register
-    methods using a decorator: ``jrpc(method_name)``, then use
-    ``gateway.supports_method(method_name)`` to check at runtime if the gateway
-    they're using supports a given method.
-
+    """
     This metaclass adds a ``rpc_methods`` attribute to sub-classes, which is a
-    dicitonary of method lookups. The methods added to this dictionary are ones
-    decorated with ``jrpc('method_name')``. The method name passed into the
-    decorator is used for the dictionary key.
-
+    dicitonary of methods. The methods added to this dictionary are ones
+    decorated with ``jrpc``. The method name passed into the decorator (via the
+    signature) is used for the dictionary key.
     """
     def __new__(mcs, name, bases, dct):
-        """Attaches a dictionary of methods wrapped by ``decorators.jrpc``."""
+        """
+        Attaches a dictionary of methods wrapped by `decorators.jrpc`. Does not
+        forget ancesters.
+        """
         dct['rpc_methods'] = {}
         for base in bases:
             # Update the methods dict from all bases, overwriting each parent
@@ -90,29 +88,9 @@ class JSONRPCServiceMeta(type):
 
 
 class JSONRPCService(object):
-    """Create a subclass of this, add methods (wrapped in ``decorators.jrpc``),
+    """
+    Create a subclass of this, add methods (wrapped in ``decorators.jrpc``),
     and map an instance of the class to a URL, and you have a JSON-RPC service.
-    All API methods need to return normal, hashable responses, suitable for
-    ``json.dumps``.
-
-    Usage:
-
-    # imports omitted
-
-    # foo_service.py
-    class MyService(JSONRPCService):
-        #@transaction.commit_on_success  # Use transactions, if needed.
-        @jrpc('sum(a=<num>, b=<num>) -> <num>', safe=True)
-        def add_numbers(a, b):
-            return a + b
-
-    # urls.py
-    myservice = MyService(debug=settings.DEBUG)
-
-    urlpatterns = patterns('',
-        url(r'^rpc.json$', myservice, name='myservice'),
-    )
-
     """
     __metaclass__ = JSONRPCServiceMeta  # Adds ``rpc_methods`` to class.
 
