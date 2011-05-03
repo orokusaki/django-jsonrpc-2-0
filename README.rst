@@ -20,16 +20,18 @@ A basic example looks like::
     from jsonrpc.service import JSONRPCService
     from jsonrpc.decorators import jrpc
 
+
     class FooAPI(JSONRPCService):
         @jrpc('get_sum(foo=<num>, bar=<num>?) -> <num>')
         def get_sum(self, foo, bar):
             return foo + bar
 
-        def some_private_method(self):
+        def private_foo(self):
             return u'Hello, World'
 
     # urls.py
     # =======
+    from django.views.decorators.csrf import csrf_exempt
     from foo_app.api import FooAPI
 
 
