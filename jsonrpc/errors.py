@@ -1,7 +1,7 @@
-"""JSON-RPC 2.0 exceptions (including custom exceptions), based on the
-specificaction at http://groups.google.com/group/json-rpc/web/json-rpc-2-0."""
-
-
+"""
+JSON-RPC 2.0 exceptions (including custom exceptions), based on the
+specificaction at http://groups.google.com/group/json-rpc/web/json-rpc-2-0.
+"""
 class JSONRPCError(Exception):
     """A general JSON-RPC error which defaults to the ``ServerError`` specs."""
     code = -32603

@@ -1,6 +1,9 @@
-"""Utilities for processing JSON-RPC method signatures, and their types."""
+"""
+Utilities for processing JSON-RPC method signatures, and their types.
+"""
 import re
-from json_types import JSONType
+
+from .json_types import JSONType
 
 
 # Signature: ``name(foo=<type>, bar=<type>, baz=<type>) -> <type>``.
@@ -23,8 +26,8 @@ def name_from_signature(sig):
     try:
         return re.match(SIG_RE, sig).group('name')
     except (AttributeError, IndexError):
-        raise ValueError(u'Method signature syntax "{sig}" is '
-                         'incorrect.'.format(sig=sig))
+        raise ValueError(
+            u'Method signature syntax "{sig}" is incorrect.'.format(sig=sig))
 
 
 def params_from_signature(sig):
@@ -41,8 +44,8 @@ def params_from_signature(sig):
     try:
         args = re.match(SIG_RE, sig).group('args')
     except (AttributeError, IndexError):
-        raise ValueError(u'Method signature syntax "{sig}" is '
-                         'incorrect.'.format(sig=sig))
+        raise ValueError(
+            u'Method signature syntax "{sig}" is incorrect.'.format(sig=sig))
     try:
         lot = []  # Return value ``[(name, type, optional), ...]``
         if len(args) > 0:
@@ -55,16 +58,17 @@ def params_from_signature(sig):
                     opt_flag = True
                 else:
                     if opt_flag:  # Optional params already encountered.
-                        raise ValueError(u'Required params must come before '
-                                         'optional params in '
-                                         '"{sig}".'.format(sig=sig))
+                        raise ValueError(
+                            u'Required params must come before optional '
+                            'params in "{sig}".'.format(sig=sig))
                     optional = False
-                lot.append((match.group('name'), match.group('type'),
-                            optional))
+                lot.append(
+                    (match.group('name'), match.group('type'), optional))
         return lot
     except (AttributeError, IndexError):
-        raise ValueError(u'Method signature params syntax "{sig}" is '
-                         'incorrect '.format(sig=sig))
+        raise ValueError(
+            u'Method signature params syntax "{sig}" is incorrect '.format(
+                sig=sig))
 
 
 def return_type_from_signature(sig):
@@ -81,10 +85,11 @@ def return_type_from_signature(sig):
     try:
         r_type = re.match(SIG_RE, sig).group('rtype')
     except (AttributeError, IndexError):
-        raise ValueError(u'Method signature syntax "{sig}" is '
-                         'incorrect.'.format(sig=sig))
+        raise ValueError(
+            u'Method signature syntax "{sig}" is incorrect.'.format(sig=sig))
     if not r_type in JSONType.json_types:
-        raise ValueError(u'Invalid return type "{r_type}". Allowed types are: '
-                         '{allowed}.'.format(r_type=r_type,
-                            allowed=', '.join(JSONType.json_types)))
+        raise ValueError(
+            u'Invalid return type "{r_type}". Allowed types are: '
+            '{allowed}.'.format(
+                r_type=r_type, allowed=', '.join(JSONType.json_types)))
     return r_type

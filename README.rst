@@ -23,10 +23,11 @@ A basic example looks like::
 
 
     class FooAPI(JSONRPCService):
-        @jrpc('get_sum(foo=<num>, bar=<num>?) -> <num>')  # bar arg is optional
+        @jrpc('get_sum(foo=<num>, bar=<num>?) -> <num>')
         def get_sum(self, foo, bar=2):
             """
-            No frills, just return the sum.
+            No frills, just return the sum. The ``bar`` argument is optional,
+            which is why it is followed by a "?".
             """
             return foo + bar
 
@@ -52,12 +53,39 @@ A basic example looks like::
 
 
     # Example POST to /foo_app/foo.json
+
     REQ -> {"jsonrpc": "2.0", "method": "get_sum", "params": {"foo": 3}, "id": 1}
+
     RES <- {"jsonrpc": "2.0", "result": 5, "id": 1}
 
 
+    # In GET requests, the JSON-RPC over HTTP spec calls for arguments to be
+    # provided in a format like ?params=<params>&method=<method>. Since there
+    # is no spec for JSON-RPC 2.0 over HTTP, I've taken some liberties and made
+    # things a bit simpler, allowing you to simply URL encode the exact same
+    # JSON request object that you'd otherwise POST to the server, and provide
+    # it in a "json" query param (e.g. ?json={...).
+
+
+    # Example GET
+
+    REQ -> /rpc.json?json=%7b%22jsonrpc%22%3a+%222.0%22%2c+%22method%22%3a+%22a
+                     dd_ints%22%2c+%22params%22%3a+%5b50%2c+25%5d%2c+%22id%22%3
+                     a+1%7d
+    RES <- {"jsonrpc": "2.0", "result": 75, "id": 1}
+
+
+    # Example GET, with padding (ie, JSONP)
+
+    REQ -> /rpc.json?json=%7b%22jsonrpc%22%3a+%222.0%22%2c+%22method%22%3a+%22a
+                     dd_ints%22%2c+%22params%22%3a+%5b50%2c+25%5d%2c+%22id%22%3
+                     a+1%7d&jsoncallback=mycallback
+    RES < - mycallback({"jsonrpc": "2.0", "result": 75, "id": 1})
+
+
 That's it. You don't need to do anything special, define a queryset method,
-register anything, etc. Just write normal methods.
+register anything, etc. Just write normal methods, and wrap the ones you wish
+to expose with the @jrpc decorator (as shown above).
 
 More docs coming soon...
 

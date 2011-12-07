@@ -1,7 +1,10 @@
-"""Provides ``jrpc`` for registering methods with a ``JSONRPCService``."""
+"""
+Provides ``jrpc`` for registering methods with a ``JSONRPCService``.
+"""
 from functools import wraps
-from signatures import name_from_signature, params_from_signature
-from signatures import return_type_from_signature
+
+from .signatures import (name_from_signature, params_from_signature,
+                         return_type_from_signature)
 
 
 def jrpc(signature, safe=False, describe=True, summary=None, idempotent=False,

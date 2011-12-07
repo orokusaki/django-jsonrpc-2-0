@@ -2,9 +2,9 @@ from decimal import Decimal
 
 
 class JSONType(object):
-    """Similar to ``type`` for comparison purposes of a JSON object.
-
-    Usage:
+    """
+    A mapping of JSON type to Python types, which provides equality checking,
+    much like ``type``.
 
     >>> x = 1
     >>> # Next line checks that ``x`` is a JSON "num" object.
@@ -16,7 +16,7 @@ class JSONType(object):
     >>> JSONType('spam')
     Traceback (most recent call last):
     ...
-    ValueError: Invalid key "spam" provided.
+    ValueError: Invalid key "spam" provided
 
     """
     json_types = {
@@ -25,8 +25,8 @@ class JSONType(object):
         'str': (basestring, str, unicode),
         'arr': (list,),
         'obj': (dict,),
+        'nil': (None,),
         'any': (bool, float, int, Decimal, str, unicode, list, dict, None),
-        'nil': (None,)
     }
 
     def __init__(self, type_key):
@@ -35,10 +35,32 @@ class JSONType(object):
         try:
             self._types = self.json_types[type_key]
         except KeyError:
-            raise ValueError('``type_key`` "{0}" is invalid.'.format(type_key))
+            raise ValueError('Invalid key "{0}" provided'.format(type_key))
+        else:
+            self._json_type_code = type_key
 
     def __eq__(self, other):
+        """
+        Returns whether or not the provided type is in the tuple of supported
+        types for self.
+        """
         return other in self._types
+
+    @classmethod
+    def by_python_type(cls, p_type):
+        """
+        Takes any Python type, and returns an appropriate ``JSONType``. If the
+        type provided isn't supported, a ``ValueError`` is raised.
+        """
+        for key, python_types in cls.json_types.iteritems():
+            if not key == 'any' and p_type in python_types:
+                return cls(key)
+
+        raise ValueError(u'{t} is not a valid JSON type'.format(t=p_type))
+
+
+    def __unicode__(self):
+        return self._json_type_code
 
 
 if __name__ == '__main__':
