@@ -14,7 +14,8 @@ ARG_RE = r'^(?P<name>\w+)=<(?P<type>\w+)>(?:(?P<optional>[\?])?)$'
 
 
 def name_from_signature(sig):
-    """Takes a method signature. Returns the method's name.
+    """
+    Takes a method signature. Returns the method's name.
 
     Usage:
 
@@ -31,7 +32,8 @@ def name_from_signature(sig):
 
 
 def params_from_signature(sig):
-    """Takes a method signature, such as ``sig_example``. Returns a list of
+    """
+    Takes a method signature, such as ``sig_example``. Returns a list of
     3-tuples, each with a parameter, it's type, and whether it's optional.
 
     Usage:
@@ -72,7 +74,8 @@ def params_from_signature(sig):
 
 
 def return_type_from_signature(sig):
-    """Returns the string representation of the JSON type returned by a method
+    """
+    Returns the string representation of the JSON type returned by a method
     (for use in ``jsonrpc.types.JSONRPCType``), based on a provided signature.
 
     Usage:

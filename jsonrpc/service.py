@@ -17,7 +17,8 @@ from .encoders import JSONRPCEncoder
 
 
 class JSONRPCServiceMeta(type):
-    """The purpose of this metaclass is to allow sub-classes to register
+    """
+    The purpose of this metaclass is to allow sub-classes to register
     methods using a decorator: ``jrpc(method_name)``, then use
     ``gateway.supports_method(method_name)`` to check at runtime if the gateway
     they're using supports a given method.
@@ -29,7 +30,9 @@ class JSONRPCServiceMeta(type):
 
     """
     def __new__(mcs, name, bases, dct):
-        """Attaches a dictionary of methods wrapped by ``decorators.jrpc``."""
+        """
+        Attaches a dictionary of methods wrapped by ``decorators.jrpc``.
+        """
         dct['rpc_methods'] = {}
         for base in bases:
             # Update the methods dict from all bases, overwriting each parent
@@ -47,27 +50,21 @@ class JSONRPCServiceMeta(type):
 
 
 class JSONRPCService(object):
-    """Create a subclass of this, add methods (wrapped in ``decorators.jrpc``),
+    """
+    Create a subclass of this, add methods (wrapped in ``decorators.jrpc``),
     and map an instance of the class to a URL, and you have a JSON-RPC service.
     All API methods need to return normal, hashable responses, suitable for
     ``json.dumps``.
 
-    Usage:
+    # Usage::
 
-    # imports omitted
-
-    # foo_service.py
     class MyService(JSONRPCService):
-        #@transaction.commit_on_success  # Use transactions, if needed.
         @jrpc('sum(a=<num>, b=<num>) -> <num>', safe=True)
         def add_numbers(a, b):
             return a + b
 
-    # urls.py
-    myservice = MyService(debug=settings.DEBUG)
-
     urlpatterns = patterns('',
-        url(r'^rpc.json$', myservice, name='myservice'),
+        url(r'^rpc.json$', MyService(debug=settings.DEBUG), name='myservice'),
     )
 
     """
@@ -92,11 +89,13 @@ class JSONRPCService(object):
     padding_names = ('callback', 'jsoncallback')
 
     def __init__(self, debug=False, safe=False, http_errors=True, **kwargs):
-        """When debug is ``True`` JSON output is formatted using indentation,
+        """
+        When debug is ``True`` JSON output is formatted using indentation,
         and extra debug information, such as database queries, tracebacks, etc.
         are provided. When safe is ``True`` a service is marked as safe, and
         all methods are available via GET and JSON-P, regardless of their
-        individual ``safe`` settings."""
+        individual ``safe`` settings.
+        """
         self.debug = debug
         self.safe = safe
         self.http_errors = http_errors
@@ -148,18 +147,24 @@ class JSONRPCService(object):
 
     @property
     def proc_descriptions(self):
-        """Returns a list with procedure descriptions for each procedure."""
+        """
+        Returns a list with procedure descriptions for each procedure.
+        """
         return [m.description for m in self.methods.itervalues() if m.describe]
 
     @property
     def methods(self):
-        """Returns the dictionary of methods attached to a ``JSONRPCService``
-        during class creation (ones decorated by ``decorators.jrpc``)."""
+        """
+        Returns the dictionary of methods attached to a ``JSONRPCService``
+        during class creation (ones decorated by ``decorators.jrpc``).
+        """
         return self.rpc_methods
 
     def _get_json_req(self, request):
-        """Returns a JSON request object (as defined in JSON-RPC 2.0 spec), or
-        raises a ``JSONRPCError``, if there is a problem with the request."""
+        """
+        Returns a JSON request object (as defined in JSON-RPC 2.0 spec), or
+        raises a ``JSONRPCError``, if there is a problem with the request.
+        """
         if request.method == 'GET':
             try:
                 urlencoded_json = request.GET['json']
@@ -167,6 +172,10 @@ class JSONRPCService(object):
                 raise InvalidRequestError(
                     details=u'In a GET request, JSON must be provided in a '
                     'URL argument named "json"')
+            else:
+                if not urlencoded_json:
+                    raise InvalidRequestError(
+                        u'The "json" URL argument cannot be empty')
             try:
                 json_req = json.loads(urllib2.unquote(urlencoded_json))
                 if not type(json_req) == dict:
@@ -174,14 +183,12 @@ class JSONRPCService(object):
                         details=u'The JSON provided must be an object')
                 return json_req
             except ValueError:
-                raise ParseError(
-                    details=u'There was a syntax error in the provided JSON')
+                raise ParseError
         elif request.method == 'POST':
             try:
-                json_req = json.loads(request.raw_post_data)
+                json_req = json.loads(request.body)
             except ValueError:
-                raise InvalidRequestError(
-                    details=u'There was a syntax error in the provided JSON')
+                raise ParseError
             else:
                 if not type(json_req) == dict:
                     raise InvalidRequestError(
@@ -194,8 +201,10 @@ class JSONRPCService(object):
                 'not {m}'.format(m=request.method))
 
     def _valid_jsonrpc_id(self, json_req):
-        """Returns a valid ``int`` or ``str`` id from a JSON request object, or
-        raises a ``JSONRPCError``, if the id is missing or of invalid type."""
+        """
+        Returns a valid ``int`` or ``str`` id from a JSON request object, or
+        raises a ``JSONRPCError``, if the id is missing or of invalid type.
+        """
         try:
             rid = json_req['id']
         except KeyError:
@@ -211,8 +220,10 @@ class JSONRPCService(object):
         return rid
 
     def _valid_jsonrpc_params(self, json_req):
-        """Accepts a JSON request object and returns the params, or raises a
-        ``JSONRCPRError``, if the params are missing or are of invalid type."""
+        """
+        Accepts a JSON request object and returns the params, or raises a
+        ``JSONRCPRError``, if the params are missing or are of invalid type.
+        """
         try:
             params = json_req['params']
         except KeyError:
@@ -225,8 +236,10 @@ class JSONRPCService(object):
         return params
 
     def _valid_jsonrpc_method(self, json_req):
-        """Accepts a JSON request object and returns the method, or raises a
-        ``JSONRCPRError``, if the method is missing or is of invalid type."""
+        """
+        Accepts a JSON request object and returns the method, or raises a
+        ``JSONRCPRError``, if the method is missing or is of invalid type.
+        """
         try:
             method = json_req['method']
         except KeyError:
@@ -237,8 +250,10 @@ class JSONRPCService(object):
         return method
 
     def _validate_jsonrpc_verion(self, json_req):
-        """Accepts a JSON request object and does nothing, or raises a
-        ``JSONRPCError``, if the jsonrpc argument != self.jsonrpc_version."""
+        """
+        Accepts a JSON request object and does nothing, or raises a
+        ``JSONRPCError``, if the jsonrpc argument != self.jsonrpc_version.
+        """
         try:
             version = json_req['jsonrpc']
         except KeyError:
@@ -249,9 +264,11 @@ class JSONRPCService(object):
                     self.jsonrpc_version))
 
     def _json_padding_or_none(self, request):
-        """Returns the padding string for JSON-P requests, if provided. If
+        """
+        Returns the padding string for JSON-P requests, if provided. If
         multiple allowed JSON-P padding strings are provided, the first will be
-        returned. If none are provided, ``None`` is returned."""
+        returned. If none are provided, ``None`` is returned.
+        """
         if request.method == 'GET':
             for name in self.padding_names:
                 padding = request.GET.get(name, None)
@@ -268,10 +285,12 @@ class JSONRPCService(object):
         pass
 
     def _response(self, ex=None, result=None, rid=None, padding=None):
-        """Takes an ``Exception`` instance or a hashable result from a service
+        """
+        Takes an ``Exception`` instance or a hashable result from a service
         method, an ID (if available), and JSON-P padding (if applicable).
         Returns an ``HTTPResponse`` instance. If no result or exception is
-        provided, a general server error will be returned."""
+        provided, a general server error will be returned.
+        """
         response = {
             'id': rid,
             'jsonrpc': self.jsonrpc_version,
@@ -313,8 +332,10 @@ class JSONRPCService(object):
                             content_type=self.content_type)
 
     def _valid_params(self, method, params):
-        """Validates type, and number of params. Raises ``ParamsError`` when a
-        missmatch is found."""
+        """
+        Validates type, and number of params. Raises ``ParamsError`` when a
+        missmatch is found.
+        """
         # ``list`` (JavaScript Array) based "params"
         if type(params) is list:
             params_list = []
@@ -368,14 +389,16 @@ class JSONRPCService(object):
                 details=u'The `params` argument must be an array or object')
 
     def _error_dict(self, ex):
-        """Returns a ``dict`` in the format of an JSON-RPC error object, with
-        extra "data", including a full traceback when in development."""
+        """
+        Returns a ``dict`` in the format of an JSON-RPC error object, with
+        extra "data", including a full traceback when in development.
+        """
         error = {}
         if isinstance(ex, JSONRPCError):
             error['code'] = ex.code
             error['message'] = ex.message
         else:
-            ex = InternalError(details=u'An unknown error has occurred')
+            ex = InternalError(details=u'An internal error has occurred')
             error['code'] = ex.code
             error['message'] = ex.message
         error['data'] = {
@@ -389,8 +412,10 @@ class JSONRPCService(object):
         return error
 
     def _dispatch(self, request, method_name, params):
-        """Returns the result of calling the method via it's name from
-        ``self.methods`` with the provided arguments."""
+        """
+        Returns the result of calling the method via it's name from
+        ``self.methods`` with the provided arguments.
+        """
         try:
             method = self.methods[method_name]
         except KeyError:
@@ -411,9 +436,11 @@ class JSONRPCService(object):
 
     @jrpc('system.describe() -> <obj>', safe=True, describe=False)
     def describe(self):
-        """Describes the system per the specification (from JSON-RPC 1.1) at
+        """
+        Describes the system per the specification (from JSON-RPC 1.1) at
         http://json-rpc.org/wd/JSON-RPC-1-1-WD-20060807.html, with a few minor
-        differences (additions)."""
+        differences (additions).
+        """
         return {
             'sdversion': self.service_sdversion,
             'name': self.service_name,

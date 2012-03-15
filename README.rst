@@ -1,6 +1,6 @@
-===============
+============
 Django-JSON-RPC-2.0
-===============
+============
 
 Currently being used by *a* production site, built-in unit tests coming soon...
 
@@ -9,11 +9,11 @@ Requirements
 ============
 
 * Python 2.6+
-* Django 1.2+
+* Django 1.2+ (very decoupled from Django, so works perfectly on 1.4 as well)
 
 
 Example Usage
-====================
+============
 
 A basic example looks like::
 
@@ -26,16 +26,16 @@ A basic example looks like::
         @jrpc('get_sum(foo=<num>, bar=<num>?) -> <num>')
         def get_sum(self, foo, bar=2):
             """
-            No frills, just return the sum. The ``bar`` argument is optional,
-            which is why it is followed by a "?".
+            No magic here, just a normal method.
             """
             return foo + bar
 
-        def private_foo(self):
+        def some_non_public_method(self):
             """
-            You can bring your own frends to class, no problem.
+            Only explicitly exposed methods are exposed, so you can do what you
+            want elsewhere.
             """
-            return u'Hello, World'
+            ... perform top secret tasks here :)
 
 
     # urls.py
@@ -85,25 +85,26 @@ A basic example looks like::
 
 That's it. You don't need to do anything special, define a queryset method,
 register anything, etc. Just write normal methods, and wrap the ones you wish
-to expose with the @jrpc decorator (as shown above).
-
-More docs coming soon...
+to expose with the `@jrpc` decorator (as shown above). If you define a method
+and wrap it in `@jrpc` and the syntax of the method signature you provide to
+`@jrpc` is incorrect, it'll raise an error (during "compile" time).
 
 
 Features
-=============
+============
 
-When DEBUG is on, you'll receive a 'debug' key in the object that's returned
-that contains (still to spec) information about the queries that were run, and
-full tracebacks for any exceptions.
+When your API is in debug mode you'll receive a `debug` key in the response
+JSON object, which contains information about the queries that were run during
+the request cycle, and tracebacks for exceptions.
 
-Supports JSON-P, with any callback name you'd like to use (docs coming soon :)
+Supports JSON-P, with any callback name you'd like to use, with an attribute
+`padding_names` on your API class (default is `('callback', 'jsoncallback')`)
 
 
 Freebies
-=============
+============
 
-Every API you create comes with a method called 'system.describe' which returns
+Every API you create comes with a method called `system.describe` which returns
 a JSON-RPC 2.0 spec description of the API's methods, the arguments they take,
 whether each argument is optional, which type the argument should be, etc. This
 method can be overridden just like any other.

@@ -3,7 +3,9 @@ JSON-RPC 2.0 exceptions (including custom exceptions), based on the
 specificaction at http://groups.google.com/group/json-rpc/web/json-rpc-2-0.
 """
 class JSONRPCError(Exception):
-    """A general JSON-RPC error which defaults to the ``ServerError`` specs."""
+    """
+    A general JSON-RPC error which defaults to the ``ServerError`` specs.
+    """
     code = -32603
     message = u'Server error'
     http_status = 500
@@ -31,7 +33,9 @@ class InvalidRequestError(JSONRPCError):
 
 
 class MethodNotFoundError(JSONRPCError):
-    """The requested JSON-RPC method is not registered with the service."""
+    """
+    The requested JSON-RPC method is not registered with the service.
+    """
     code = -32601
     message = u'Method not found'
     http_status = 404
@@ -39,14 +43,18 @@ class MethodNotFoundError(JSONRPCError):
 
 
 class InvalidParamsError(JSONRPCError):
-    """An error raised when incorrect arguments are given, not enough arguments
-    are given, or when positional and keyword arguments are given."""
+    """
+    An error raised when incorrect arguments are given, not enough arguments
+    are given, or when positional and keyword arguments are given.
+    """
     code = -32602
     message = u'Invalid params'
 
 
 class InternalError(JSONRPCError):
-    """Internal error with JSON-RPC server."""
+    """
+    Internal error with JSON-RPC server.
+    """
     code = -32603
     message = u'Internal error'
     details = u'Internal JSON-RPC error.'
@@ -55,6 +63,8 @@ class InternalError(JSONRPCError):
 # Custom errors (codes -32099 to -32000 are reserved for this):
 
 class ServerError(JSONRPCError):
-    """A General error (in case something goes wrong with the app)."""
+    """
+    A General error (in case something goes wrong with the app).
+    """
     code = -32099
     message = u'Server error'
