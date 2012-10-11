@@ -100,8 +100,8 @@ When your API is in debug mode you'll receive a `debug` key in the response
 JSON object, which contains information about the queries that were run during
 the request cycle, and tracebacks for exceptions.
 
-Access `request` by settings `provide_request` to `True` on your service class.
-Then, write your API methods to accept `request` as the first argument.
+Access the `request` by setting `provide_request` to `True` on your service
+class. Then, write your API methods to accept `request` as the first argument.
 
 Supports JSON-P, with any callback name you'd like to use, with an attribute
 `padding_names` on your API class (default is `('callback', 'jsoncallback')`)
