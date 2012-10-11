@@ -26,7 +26,7 @@ def name_from_signature(sig):
     """
     try:
         return re.match(SIG_RE, sig).group('name')
-    except (AttributeError, IndexError):
+    except AttributeError:
         raise ValueError(
             u'Method signature syntax "{sig}" is incorrect.'.format(sig=sig))
 
@@ -45,7 +45,7 @@ def params_from_signature(sig):
     """
     try:
         args = re.match(SIG_RE, sig).group('args')
-    except (AttributeError, IndexError):
+    except AttributeError:
         raise ValueError(
             u'Method signature syntax "{sig}" is incorrect.'.format(sig=sig))
     try:
@@ -67,7 +67,7 @@ def params_from_signature(sig):
                 lot.append(
                     (match.group('name'), match.group('type'), optional))
         return lot
-    except (AttributeError, IndexError):
+    except AttributeError:
         raise ValueError(
             u'Method signature params syntax "{sig}" is incorrect '.format(
                 sig=sig))
@@ -87,7 +87,7 @@ def return_type_from_signature(sig):
     """
     try:
         r_type = re.match(SIG_RE, sig).group('rtype')
-    except (AttributeError, IndexError):
+    except AttributeError:
         raise ValueError(
             u'Method signature syntax "{sig}" is incorrect.'.format(sig=sig))
     if not r_type in JSONType.json_types:

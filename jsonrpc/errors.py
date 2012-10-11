@@ -8,6 +8,7 @@ class JSONRPCError(Exception):
     """
     code = -32603
     message = u'Server error'
+    details = u'A general server error has occurred'
     http_status = 500
 
     def __init__(self, message=None, details=None, *args, **kwargs):
@@ -16,6 +17,17 @@ class JSONRPCError(Exception):
             self.message = message
         if details is not None:
             self.details = details
+        elif message is not None:
+            # Set the details to the messag, if no details are provided
+            self.details = message
+
+    def __repr__(self):
+        if getattr(self, 'details', None) is not None:
+            return self.details
+        return self.message
+
+    def __unicode__(self):
+        return unicode(self.__repr__())
 
 
 class ParseError(JSONRPCError):

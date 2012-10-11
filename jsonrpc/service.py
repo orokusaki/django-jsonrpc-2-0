@@ -2,6 +2,7 @@
 This module is home to the ``JSONRPCService`` API base-class.
 """
 import sys
+import logging
 import json
 import urllib2
 import traceback
@@ -13,7 +14,10 @@ from .decorators import jrpc
 from .errors import (InternalError, InvalidParamsError, InvalidRequestError,
                      JSONRPCError, MethodNotFoundError, ParseError)
 from .json_types import JSONType
-from .encoders import JSONRPCEncoder
+from .encoders import RobustEncoder
+
+
+logger = logging.getLogger(__name__)
 
 
 class JSONRPCServiceMeta(type):
@@ -42,10 +46,12 @@ class JSONRPCServiceMeta(type):
                 dct['rpc_methods'].update(base.rpc_methods)
             except AttributeError:  # Some mixin or ``object`` was encountered.
                 pass
-        for mmbr in dct.itervalues():
-            if hasattr(mmbr, 'rpc_method_name'):
+
+        for member in dct.itervalues():
+            if hasattr(member, 'rpc_method_name'):
                 # Add, or update this key on the rpc methods dict.
-                dct['rpc_methods'][mmbr.rpc_method_name] = mmbr
+                dct['rpc_methods'][member.rpc_method_name] = member
+
         return type.__new__(mcs, name, bases, dct)
 
 
@@ -59,8 +65,9 @@ class JSONRPCService(object):
     # Usage::
 
     class MyService(JSONRPCService):
-        @jrpc('sum(a=<num>, b=<num>) -> <num>', safe=True)
-        def add_numbers(a, b):
+        @jrpc('sum(a=<num>, b=<num>) -> <num>')
+        def add_numbers(self, request, a, b):
+            logger.debug(u'API request by %s' % (request.user.username,))
             return a + b
 
     urlpatterns = patterns('',
@@ -70,34 +77,38 @@ class JSONRPCService(object):
     """
     __metaclass__ = JSONRPCServiceMeta  # Adds ``rpc_methods`` to class.
 
+    # This probably won't ever need to chanage
     jsonrpc_version = u'2.0'
 
     # Override this to provide "application/json", etc, if desired.
     content_type = u'text/plain; encoding=utf-8'
 
-    # Service Description: http://json-rpc.org/wd/JSON-RPC-1-1-WD-20060807.html
+    # When set to ``True`` this provides the Django request object as the
+    # first argument of each RPC method (after ``self``), so that the RPC
+    # methods can use request (e.g., ``request.META.get('REMOTE_ADDR', None)``)
+    provide_request = False
 
+    # Service Description: http://json-rpc.org/wd/JSON-RPC-1-1-WD-20060807.html
     service_sdversion = u'1.0'  # Service description version (always "1.0").
-    service_name = u'JSON-RPC Service'  # Name for service (e.g. "Search API").
-    service_id = u''  # Unique URI (http://tools.ietf.org/html/rfc3986).
-    service_version = u''  # Version of this service.
-    service_summary = u''  # Summarizes the purpose of this service.
-    service_help = u''  # URL to documentation for this service.
-    service_address = u''  # Endpoint for this service (ie, URL).
+    service_name = None  # Name for service (e.g. "Search API").
+    service_id = None  # Unique URI (http://tools.ietf.org/html/rfc3986).
+    service_version = None  # Version of this service.
+    service_summary = None  # Summarizes the purpose of this service.
+    service_help = None  # URL to documentation for this service.
+    service_address = None  # Endpoint for this service (ie, URL).
 
     # Allowed JSON-P padding names. Override in sub-classes to allow less/more.
     padding_names = ('callback', 'jsoncallback')
 
-    def __init__(self, debug=False, safe=False, http_errors=True, **kwargs):
+    def __init__(self, debug=False, can_get=False, http_errors=True, **kwargs):
         """
         When debug is ``True`` JSON output is formatted using indentation,
         and extra debug information, such as database queries, tracebacks, etc.
-        are provided. When safe is ``True`` a service is marked as safe, and
-        all methods are available via GET and JSON-P, regardless of their
-        individual ``safe`` settings.
+        are provided. When ``can_get`` is ``True`` all methods are available
+        via GET (allowing JSON-P as well).
         """
         self.debug = debug
-        self.safe = safe
+        self.can_get = can_get
         self.http_errors = http_errors
         # Turn on verbose formatting when ``verbose`` kwarg is provided and is
         # ``True``, else default to what debug is set to.
@@ -110,6 +121,9 @@ class JSONRPCService(object):
         ``settings.DEBUG`` is set to ``True``, at which point the exception is
         raised to allow Django's built-in exception handling to take over.
         """
+        # Get the IP address of the client for logging, etc.
+        remote_addr = request.META['REMOTE_ADDR']
+
         # Get JSON-P padding from the request (if applicable).
         padding = self._json_padding_or_none(request)
 
@@ -118,13 +132,13 @@ class JSONRPCService(object):
             json_req = self._get_json_req(request)
             # Get the ID.
             rid = self._valid_jsonrpc_id(json_req)
-        except Exception, ex:
+        except JSONRPCError, ex:
             return self._response(ex=ex, padding=padding)
 
         try:
             # Check the "jsonrpc" argument.
             self._validate_jsonrpc_verion(json_req)
-        except Exception, ex:
+        except JSONRPCError, ex:
             return self._response(ex=ex, rid=rid, padding=padding)
 
         try:
@@ -134,12 +148,25 @@ class JSONRPCService(object):
             params = self._valid_jsonrpc_params(json_req)
             # Call extra validation hook
             self._validate_extra(request, json_req)
+            logger.debug(u'{i} calling method `{m}` on `{c}`'.format(
+                i=remote_addr, m=method, c=type(self).__name__))
             # Attempt to dispatch the requested method.
             result = self._dispatch(request, method, params)
         except Exception, ex:
-            if (self.debug and not request.is_ajax() and not
-                isinstance(ex, JSONRPCError)):
-                raise  # re-raise for non-AJAX requests when in debug mode
+            if isinstance(ex, JSONRPCError):
+                logger.debug(u'Error from {i}: {m}'.format(
+                    i=remote_addr, m=ex.details))
+            else:
+                logger.exception(u'Error from {i}'.format(i=remote_addr))
+
+            # If in debug mode and the request isn't an AJAX request and the
+            # error is not a ``JSONRPCError``, we'll re-raise to allow Django's
+            # default error handling take over
+            if self.debug and not request.is_ajax():
+                if not isinstance(ex, JSONRPCError):
+                    raise
+
+            # Return an error response
             return self._response(ex=ex, rid=rid, padding=padding)
         else:
             # Return successful response back to client.
@@ -279,8 +306,8 @@ class JSONRPCService(object):
     def _validate_extra(self, request, json_req):
         """
         Everyone likes a hook... except for fish. This is a pre-method-call
-        hook for providing custom validation. Should raise a
-        ``jsonrpc.exceptions.ServerError`` when desired conditions are not met.
+        hook for providing custom validation. This should raise ``ServerError``
+        when the desired conditions are not met.
         """
         pass
 
@@ -318,20 +345,21 @@ class JSONRPCService(object):
 
         if self.verbose:
             # Turn on verbose JSON formatting with indentation.
-            json_output = json.dumps(response, indent=4, cls=JSONRPCEncoder)
+            json_output = json.dumps(response, indent=4, cls=RobustEncoder)
         else:
             # Turn off verbose JSON formatting and remove indentation.
-            json_output = json.dumps(response, separators=(',', ':'),
-                                     cls=JSONRPCEncoder)
+            json_output = json.dumps(
+                response, separators=(',', ':'), cls=RobustEncoder)
 
-        if padding is not None:  # Add JSON-P style padding to response.
-            response = u'{0}({1})'.format(padding, json_output)
+        if padding is not None:  # Add the JSON-P padding to response.
+            response = u'{p}({j})'.format(p=padding, j=json_output)
         else:
             response = json_output
         return HttpResponse(response, status=status,
                             content_type=self.content_type)
 
-    def _valid_params(self, method, params):
+    @staticmethod
+    def _valid_params(method, params):
         """
         Validates type, and number of params. Raises ``ParamsError`` when a
         missmatch is found.
@@ -421,7 +449,7 @@ class JSONRPCService(object):
         except KeyError:
             raise MethodNotFoundError(
                 details=u'Method `{0}` not found'.format(method_name))
-        if request.method == 'GET' and not method.rpc_safe and not self.safe:
+        if request.method == 'GET' and not self.can_get:
             raise MethodNotFoundError(
                 details=u'Method `{0}` was either not found, or is not '
                 'available via GET requests'.format(method_name))
@@ -430,12 +458,23 @@ class JSONRPCService(object):
         # parameters (per JSON-RPC 1.1 specification).
         params = self._valid_params(method, params)
 
+        # Call method with params provided as a **kwargs
         if type(params) is dict:
+            if self.provide_request:
+                # Include the request as the first argument
+                return method(self, request, **params)
+            # Don't include the request
             return method(self, **params)
+
+        # Call the method with params provided as *args
+        if self.provide_request:
+            # Include the request as the first argument
+            return method(self, request, *params)
+        # Don't include the request
         return method(self, *params)
 
-    @jrpc('system.describe() -> <obj>', safe=True, describe=False)
-    def describe(self):
+    @jrpc('system.describe() -> <obj>')
+    def describe(self, request):
         """
         Describes the system per the specification (from JSON-RPC 1.1) at
         http://json-rpc.org/wd/JSON-RPC-1-1-WD-20060807.html, with a few minor

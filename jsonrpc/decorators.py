@@ -7,8 +7,7 @@ from .signatures import (
     name_from_signature, params_from_signature, return_type_from_signature)
 
 
-def jrpc(signature, safe=False, describe=True, summary=None, idempotent=False,
-         docs_url=None):
+def jrpc(signature, describe=True, summary=None, idempotent=False, docs=None):
     """
     Use to wrap methods that belong to a ``service.JSONRPCService``. Methods
     which are wrapped in this decorator will be added to the service for access
@@ -16,16 +15,15 @@ def jrpc(signature, safe=False, describe=True, summary=None, idempotent=False,
 
     Usage::
 
-    >>>     @jrpc('get_sum(aye=<num>, bee=<num>?) -> <num>')
-    ...     def add(a, b=1):
-    ...         return a + b
-    ...
-    >>>
+        # Inside of ``JSONRPCService`` sub-class
+        @jrpc('get_sum(a=<num>, b=<num>?) -> <num>')
+            def named_whatevs(self, a, b=1):
+                return a + b
 
     """
     if callable(signature):
-        raise TypeError(u'The ``jrpc`` decorator must be provided with a '
-                        'method signature.')
+        raise TypeError(
+            u'The ``jrpc`` decorator must be provided with a method signature')
 
     def decorator(method):
         """
@@ -39,7 +37,6 @@ def jrpc(signature, safe=False, describe=True, summary=None, idempotent=False,
         method.rpc_method_name = name_from_signature(signature)
         method.rpc_params = [{'name': p[0], 'type': p[1], 'optional': p[2]} for
             p in params_from_signature(signature)]
-        method.rpc_safe = safe
         method.describe = describe
         method.return_type = return_type_from_signature(signature)
 
@@ -47,7 +44,7 @@ def jrpc(signature, safe=False, describe=True, summary=None, idempotent=False,
         method.description = {
             'name': method.rpc_method_name,
             'summary': summary,
-            'help': docs_url,
+            'help': docs,
             'idempotent': idempotent,
             'params': method.rpc_params,
             'return': method.return_type

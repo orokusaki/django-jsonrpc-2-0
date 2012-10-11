@@ -8,8 +8,8 @@ Currently being used by *a* production site, built-in unit tests coming soon...
 Requirements
 ============
 
-* Python 2.6+
-* Django 1.2+ (very decoupled from Django, so works perfectly on 1.4 as well)
+* Python 2.7 +
+* Django 1.3 +
 
 
 Example Usage
@@ -23,8 +23,11 @@ A basic example looks like::
 
 
     class FooAPI(JSONRPCService):
+        # Call all API methods with `request` as the first argument
+        provide_request = True
+
         @jrpc('get_sum(foo=<num>, bar=<num>?) -> <num>')
-        def get_sum(self, foo, bar=2):
+        def get_sum(self, request, foo, bar=2):
             """
             No magic here, just a normal method.
             """
@@ -97,6 +100,9 @@ When your API is in debug mode you'll receive a `debug` key in the response
 JSON object, which contains information about the queries that were run during
 the request cycle, and tracebacks for exceptions.
 
+Access `request` by settings `provide_request` to `True` on your service class.
+Then, write your API methods to accept `request` as the first argument.
+
 Supports JSON-P, with any callback name you'd like to use, with an attribute
 `padding_names` on your API class (default is `('callback', 'jsoncallback')`)
 
@@ -110,4 +116,4 @@ whether each argument is optional, which type the argument should be, etc. This
 method can be overridden just like any other.
 
 :author: Michael Angeletti
-:date: 2011/05/03
+:date: 2012/10/11
