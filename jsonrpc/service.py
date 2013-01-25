@@ -11,8 +11,10 @@ from django.db import connection
 from django.http import HttpResponse
 
 from .decorators import jrpc
-from .errors import (InternalError, InvalidParamsError, InvalidRequestError,
-                     JSONRPCError, MethodNotFoundError, ParseError)
+from .errors import (
+    InternalError, InvalidParamsError, InvalidRequestError, JSONRPCError,
+    MethodNotFoundError, ParseError
+)
 from .json_types import JSONType
 from .encoders import RobustEncoder
 
@@ -86,7 +88,7 @@ class JSONRPCService(object):
     # When set to ``True`` this provides the Django request object as the
     # first argument of each RPC method (after ``self``), so that the RPC
     # methods can use request (e.g., ``request.META.get('REMOTE_ADDR', None)``)
-    provide_request = False
+    provide_request = True
 
     # Service Description: http://json-rpc.org/wd/JSON-RPC-1-1-WD-20060807.html
     service_sdversion = u'1.0'  # Service description version (always "1.0").
@@ -205,7 +207,7 @@ class JSONRPCService(object):
                         u'The "json" URL argument cannot be empty')
             try:
                 json_req = json.loads(urllib2.unquote(urlencoded_json))
-                if not type(json_req) == dict:
+                if not isinstance(json_req, dict):
                     raise InvalidRequestError(
                         details=u'The JSON provided must be an object')
                 return json_req
@@ -217,7 +219,7 @@ class JSONRPCService(object):
             except ValueError:
                 raise ParseError
             else:
-                if not type(json_req) == dict:
+                if not isinstance(json_req, dict):
                     raise InvalidRequestError(
                         details=u'The JSON provided must be an object')
                 return json_req
@@ -257,7 +259,7 @@ class JSONRPCService(object):
             raise InvalidRequestError(
                 details=u'`params` argument required, even when a method '
                 'doesn\'t require any params')
-        if type(params) not in (dict, list):
+        if not isinstance(params, (dict, list)):
             raise InvalidParamsError(
                 details=u'`params` argument must be an array or an object')
         return params
@@ -271,7 +273,7 @@ class JSONRPCService(object):
             method = json_req['method']
         except KeyError:
             raise InvalidRequestError(details=u'`method` argument required')
-        if not type(method) in (unicode, str):
+        if not isinstance(method, (unicode, str)):
             raise InvalidRequestError(
                 details=u'The `method` argument must be a string')
         return method
@@ -365,7 +367,7 @@ class JSONRPCService(object):
         missmatch is found.
         """
         # ``list`` (JavaScript Array) based "params"
-        if type(params) is list:
+        if isinstance(params, list):
             params_list = []
             for idx, defined in enumerate(method.rpc_params):
                 try:
@@ -380,7 +382,7 @@ class JSONRPCService(object):
                         raise InvalidParamsError(
                             details=u'Parameter `{0}` is required, but was '
                             'not provided'.format(defined['name']))
-                if not JSONType(defined['type']) == type(provided):
+                if not isinstance(provided, JSONType(defined['type'])):
                     if defined['optional'] and provided is None:
                         pass  # Optional params are allowed to be "nil"
                     else:
@@ -390,7 +392,7 @@ class JSONRPCService(object):
                 params_list.append(provided)
             return params_list
         # ``dict`` (JavaScript object) based "params"
-        elif type(params) is dict:
+        elif isinstance(params, dict):
             params_dict = {}
             for defined in method.rpc_params:
                 name = defined['name']
@@ -403,7 +405,7 @@ class JSONRPCService(object):
                         raise InvalidParamsError(
                             details=u'Parameter `{0}` is required, but was '
                             'not provided'.format(defined['name']))
-                if not JSONType(defined['type']) == type(provided):
+                if not isinstance(provided, JSONType(defined['type'])):
                     if defined['optional'] and provided is None:
                         pass  # Optional params are allowed to be "nil"
                     else:
@@ -459,7 +461,7 @@ class JSONRPCService(object):
         params = self._valid_params(method, params)
 
         # Call method with params provided as a **kwargs
-        if type(params) is dict:
+        if isinstance(params, dict):
             if self.provide_request:
                 # Include the request as the first argument
                 return method(self, request, **params)

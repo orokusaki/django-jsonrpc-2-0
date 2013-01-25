@@ -1,19 +1,14 @@
-============
-Django-JSON-RPC-2.0
-============
-
-Currently being used by *a* production site, built-in unit tests coming soon...
-
+Django JSON-RPC 2.0
+===================
 
 Requirements
-============
+------------
 
-* Python 2.7 +
-* Django 1.3 +
-
+* Python 2.6 +
+* Django 1.4 +
 
 Example Usage
-============
+-------------
 
 A basic example looks like::
 
@@ -40,7 +35,6 @@ A basic example looks like::
             """
             ... perform top secret tasks here :)
 
-
     # urls.py
     # =======
     from django.conf import settings
@@ -54,13 +48,11 @@ A basic example looks like::
         url(r'^foo.json$', csrf_exempt(foo_api), name='foo_api'),
     )
 
-
     # Example POST to /foo_app/foo.json
 
     REQ -> {"jsonrpc": "2.0", "method": "get_sum", "params": {"foo": 3}, "id": 1}
 
     RES <- {"jsonrpc": "2.0", "result": 5, "id": 1}
-
 
     # In GET requests, the JSON-RPC over HTTP spec calls for arguments to be
     # provided in a format like ?params=<params>&method=<method>. Since there
@@ -69,14 +61,12 @@ A basic example looks like::
     # JSON request object that you'd otherwise POST to the server, and provide
     # it in a "json" query param (e.g. ?json={...).
 
-
     # Example GET
 
     REQ -> /rpc.json?json=%7b%22jsonrpc%22%3a+%222.0%22%2c+%22method%22%3a+%22a
                      dd_ints%22%2c+%22params%22%3a+%5b50%2c+25%5d%2c+%22id%22%3
                      a+1%7d
     RES <- {"jsonrpc": "2.0", "result": 75, "id": 1}
-
 
     # Example GET, with padding (ie, JSONP)
 
@@ -85,16 +75,14 @@ A basic example looks like::
                      a+1%7d&jsoncallback=mycallback
     RES < - mycallback({"jsonrpc": "2.0", "result": 75, "id": 1})
 
-
 That's it. You don't need to do anything special, define a queryset method,
 register anything, etc. Just write normal methods, and wrap the ones you wish
 to expose with the `@jrpc` decorator (as shown above). If you define a method
 and wrap it in `@jrpc` and the syntax of the method signature you provide to
 `@jrpc` is incorrect, it'll raise an error (during "compile" time).
 
-
 Features
-============
+--------
 
 When your API is in debug mode you'll receive a `debug` key in the response
 JSON object, which contains information about the queries that were run during
@@ -106,9 +94,8 @@ class. Then, write your API methods to accept `request` as the first argument.
 Supports JSON-P, with any callback name you'd like to use, with an attribute
 `padding_names` on your API class (default is `('callback', 'jsoncallback')`)
 
-
 Freebies
-============
+--------
 
 Every API you create comes with a method called `system.describe` which returns
 a JSON-RPC 2.0 spec description of the API's methods, the arguments they take,
@@ -116,4 +103,4 @@ whether each argument is optional, which type the argument should be, etc. This
 method can be overridden just like any other.
 
 :author: Michael Angeletti
-:date: 2012/10/11
+:date: 2013/01/24
