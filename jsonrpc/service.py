@@ -1,6 +1,3 @@
-"""
-This module is home to the ``JSONRPCService`` API base-class.
-"""
 import sys
 import logging
 import json
@@ -12,8 +9,12 @@ from django.http import HttpResponse
 
 from .decorators import jrpc
 from .errors import (
-    InternalError, InvalidParamsError, InvalidRequestError, JSONRPCError,
-    MethodNotFoundError, ParseError
+    InternalError,
+    InvalidParamsError,
+    InvalidRequestError,
+    JSONRPCError,
+    MethodNotFoundError,
+    ParseError
 )
 from .json_types import JSONType
 from .encoders import RobustEncoder
@@ -24,20 +25,13 @@ logger = logging.getLogger(__name__)
 
 class JSONRPCServiceMeta(type):
     """
-    The purpose of this metaclass is to allow sub-classes to register
-    methods using a decorator: ``jrpc(method_name)``, then use
-    ``gateway.supports_method(method_name)`` to check at runtime if the gateway
-    they're using supports a given method.
-
-    This metaclass adds a ``rpc_methods`` attribute to sub-classes, which is a
-    dicitonary of method lookups. The methods added to this dictionary are ones
-    decorated with ``jrpc('method_name')``. The method name passed into the
-    decorator is used for the dictionary key.
-
+    A meta-class - adds an ``rpc_methods`` attribute to sub-classes, providing
+    a dictionary of name -> method access to RPC methods.
     """
     def __new__(mcs, name, bases, dct):
         """
-        Attaches a dictionary of methods wrapped by ``decorators.jrpc``.
+        Attaches a dictionary of methods defined on the class being created
+        that have an ``rpc_method_name`` attribute.
         """
         dct['rpc_methods'] = {}
         for base in bases:
@@ -59,25 +53,14 @@ class JSONRPCServiceMeta(type):
 
 class JSONRPCService(object):
     """
-    Create a subclass of this, add methods (wrapped in ``decorators.jrpc``),
-    and map an instance of the class to a URL, and you have a JSON-RPC service.
-    All API methods need to return normal, hashable responses, suitable for
-    ``json.dumps``.
-
-    # Usage::
-
-    class MyService(JSONRPCService):
-        @jrpc('sum(a=<num>, b=<num>) -> <num>')
-        def add_numbers(self, request, a, b):
-            logger.debug(u'API request by %s' % (request.user.username,))
-            return a + b
-
-    urlpatterns = patterns('',
-        url(r'^rpc.json$', MyService(debug=settings.DEBUG), name='myservice'),
-    )
-
+    A base class for creating JSON-RPC 2.0 APIs, instances of which act like
+    Django views.
     """
     __metaclass__ = JSONRPCServiceMeta  # Adds ``rpc_methods`` to class.
+
+    # Whether or not to provide the Django request object as the first argument
+    # of each RPC method (after ``self``)
+    provide_request = True
 
     # This probably won't ever need to chanage
     jsonrpc_version = u'2.0'
@@ -85,12 +68,6 @@ class JSONRPCService(object):
     # Override this to provide "application/json", etc, if desired.
     content_type = u'text/plain; encoding=utf-8'
 
-    # When set to ``True`` this provides the Django request object as the
-    # first argument of each RPC method (after ``self``), so that the RPC
-    # methods can use request (e.g., ``request.META.get('REMOTE_ADDR', None)``)
-    provide_request = True
-
-    # Service Description: http://json-rpc.org/wd/JSON-RPC-1-1-WD-20060807.html
     service_sdversion = u'1.0'  # Service description version (always "1.0").
     service_name = None  # Name for service (e.g. "Search API").
     service_id = None  # Unique URI (http://tools.ietf.org/html/rfc3986).
