@@ -3,7 +3,7 @@ Utilities for processing JSON-RPC method signatures, and their types.
 """
 import re
 
-from .json_types import JSONType
+from .jsontype import JSONType
 
 
 # Signature: ``name(foo=<type>, bar=<type>, baz=<type>) -> <type>``.

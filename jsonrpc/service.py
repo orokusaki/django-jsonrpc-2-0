@@ -16,7 +16,7 @@ from .errors import (
     MethodNotFoundError,
     ParseError
 )
-from .json_types import JSONType
+from .jsontype import JSONType
 from .encoders import RobustEncoder
 
 
