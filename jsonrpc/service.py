@@ -369,7 +369,7 @@ class JSONRPCService(object):
                         raise InvalidParamsError(
                             details=u'Parameter `{0}` is required, but was '
                             'not provided'.format(defined['name']))
-                if not isinstance(provided, JSONType(defined['type'])):
+                if not type(provided) == JSONType(defined['type']):
                     if defined['optional'] and provided is None:
                         pass  # Optional params are allowed to be "nil"
                     else:
@@ -392,7 +392,7 @@ class JSONRPCService(object):
                         raise InvalidParamsError(
                             details=u'Parameter `{0}` is required, but was '
                             'not provided'.format(defined['name']))
-                if not isinstance(provided, JSONType(defined['type'])):
+                if not type(provided) == JSONType(defined['type']):
                     if defined['optional'] and provided is None:
                         pass  # Optional params are allowed to be "nil"
                     else:

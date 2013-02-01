@@ -1,32 +1,19 @@
-from decimal import Decimal
-
-
 class JSONType(object):
     """
-    A mapping of JSON type to Python types, which provides equality checking,
-    much like ``type``.
+    A representation of a JSON type, providing comparison functionality.
 
     >>> x = 1
-    >>> # Next line checks that ``x`` is a JSON "num" object.
     >>> JSONType('num') == type(x)
-    True
-    >>> x = 'Hello, World'
-    >>> JSONType('str') == type(x)
-    True
-    >>> JSONType('spam')
-    Traceback (most recent call last):
-    ...
-    ValueError: Invalid key "spam" provided
 
     """
     json_types = {
         'bit': (bool,),
-        'num': (float, int, Decimal),
+        'num': (float, int),
         'str': (basestring, str, unicode),
         'arr': (list,),
         'obj': (dict,),
         'nil': (None,),
-        'any': (bool, float, int, Decimal, str, unicode, list, dict, None),
+        'any': (bool, float, int, str, unicode, list, dict, None),
     }
 
     def __init__(self, type_key):
@@ -45,6 +32,9 @@ class JSONType(object):
         types for self.
         """
         return other in self._types
+
+    def __repr__(self):
+        return self._json_type_code
 
     @classmethod
     def by_python_type(cls, p_type):
