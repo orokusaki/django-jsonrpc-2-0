@@ -79,19 +79,29 @@ class JSONRPCService(object):
     # Allowed JSON-P padding names. Override in sub-classes to allow less/more.
     padding_names = ('callback', 'jsoncallback')
 
-    def __init__(self, debug=False, can_get=False, http_errors=True, **kwargs):
+    def __init__(self, debug=False, get=False, http_errors=True, **kwargs):
         """
         When debug is ``True`` JSON output is formatted using indentation,
         and extra debug information, such as database queries, tracebacks, etc.
-        are provided. When ``can_get`` is ``True`` all methods are available
-        via GET (allowing JSON-P as well).
+        are provided. When ``get`` is ``True`` all methods are available via
+        the GET HTTP method.
+
+        :param debug: Whether or not provide debug info (tracebacks, SQL, etc.)
+        :type debug: bool
+        :param get: Whether or not to allow HTTP GET access to RPC methods
+        :type get: bool
+        :param http_status: Whether or not to return HTTP errors (400, 500,
+            etc.) - helpful for JSONP requests, which can't handle HTTP errors
+        :type http_status: bool
+
         """
         self.debug = debug
-        self.can_get = can_get
+        self.get = get
         self.http_errors = http_errors
-        # Turn on verbose formatting when ``verbose`` kwarg is provided and is
-        # ``True``, else default to what debug is set to.
-        self.verbose = kwargs.pop('verbose', self.debug)
+
+        # Optional "pretty" kwarg, used to determine whether or not to format
+        #
+        self.pretty = kwargs.pop('pretty', self.debug)
 
     def __call__(self, request):
         """
@@ -322,11 +332,11 @@ class JSONRPCService(object):
                 }
             }
 
-        if self.verbose:
-            # Turn on verbose JSON formatting with indentation.
+        if self.pretty:
+            # Turn on pretty JSON formatting with indentation.
             json_output = json.dumps(response, indent=4, cls=RobustEncoder)
         else:
-            # Turn off verbose JSON formatting and remove indentation.
+            # Turn off pretty JSON formatting and remove indentation.
             json_output = json.dumps(
                 response, separators=(',', ':'), cls=RobustEncoder)
 
@@ -428,7 +438,7 @@ class JSONRPCService(object):
         except KeyError:
             raise MethodNotFoundError(
                 details=u'Method `{0}` not found'.format(method_name))
-        if request.method == 'GET' and not self.can_get:
+        if request.method == 'GET' and not self.get:
             raise MethodNotFoundError(
                 details=u'Method `{0}` was either not found, or is not '
                 'available via GET requests'.format(method_name))
